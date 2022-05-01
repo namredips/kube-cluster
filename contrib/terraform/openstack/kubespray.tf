@@ -1,14 +1,15 @@
 module "network" {
   source = "./modules/network"
 
-  external_net       = var.external_net
-  network_name       = var.network_name
-  subnet_cidr        = var.subnet_cidr
-  cluster_name       = var.cluster_name
-  dns_nameservers    = var.dns_nameservers
-  network_dns_domain = var.network_dns_domain
-  use_neutron        = var.use_neutron
-  router_id          = var.router_id
+  external_net          = var.external_net
+  network_name          = var.network_name
+  subnet_cidr           = var.subnet_cidr
+  cluster_name          = var.cluster_name
+  dns_nameservers       = var.dns_nameservers
+  network_dns_domain    = var.network_dns_domain
+  use_neutron           = var.use_neutron
+  port_security_enabled = var.port_security_enabled
+  router_id             = var.router_id
 }
 
 module "ips" {
@@ -80,7 +81,6 @@ module "compute" {
   supplementary_node_groups                    = var.supplementary_node_groups
   master_allowed_ports                         = var.master_allowed_ports
   worker_allowed_ports                         = var.worker_allowed_ports
-  wait_for_floatingip                          = var.wait_for_floatingip
   use_access_ip                                = var.use_access_ip
   master_server_group_policy                   = var.master_server_group_policy
   node_server_group_policy                     = var.node_server_group_policy
@@ -88,6 +88,7 @@ module "compute" {
   extra_sec_groups                             = var.extra_sec_groups
   extra_sec_groups_name                        = var.extra_sec_groups_name
   group_vars_path                              = var.group_vars_path
+  port_security_enabled                        = var.port_security_enabled
 
   network_id = module.network.router_id
 }

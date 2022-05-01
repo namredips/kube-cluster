@@ -106,8 +106,6 @@ variable "k8s_allowed_egress_ips" {
 
 variable "k8s_nodes" {}
 
-variable "wait_for_floatingip" {}
-
 variable "supplementary_master_groups" {
   default = ""
 }
@@ -164,4 +162,8 @@ variable "image_master_uuid" {
 
 variable "group_vars_path" {
   type = string
+}
+
+variable "port_security_enabled" {
+  type = bool
 }

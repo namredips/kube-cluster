@@ -3,9 +3,6 @@
   tags:
     - k8s-pre-upgrade
 
-- name: Define nodes already joined to existing cluster and first_kube_control_plane
-  import_tasks: define-first-kube-control.yml
-
 - name: Create webhook token auth config
   template:
     src: webhook-token-auth-config.yaml.j2
@@ -64,12 +61,15 @@
     kube_apiserver_enable_admission_plugins: "{{ kube_apiserver_enable_admission_plugins | difference(['SecurityContextDeny']) | union(['PodSecurityPolicy']) | unique }}"
   when: podsecuritypolicy_enabled
 
+- name: Define nodes already joined to existing cluster and first_kube_control_plane
+  import_tasks: define-first-kube-control.yml
+
 - name: Include kubeadm setup
   import_tasks: kubeadm-setup.yml
 
 - name: Include kubeadm etcd extra tasks
   include_tasks: kubeadm-etcd.yml
-  when: etcd_kubeadm_enabled
+  when: etcd_deployment_type == "kubeadm"
 
 - name: Include kubeadm secondary server apiserver fixes
   include_tasks: kubeadm-fix-apiserver.yml

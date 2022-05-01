@@ -2,9 +2,6 @@
 # disable upgrade cluster
 upgrade_cluster_setup: false
 
-# Experimental kubeadm etcd deployment mode. Available only for new deployment
-etcd_kubeadm_enabled: false
-
 # change to 0.0.0.0 to enable insecure access from anywhere (not recommended)
 kube_apiserver_insecure_bind_address: 127.0.0.1
 
@@ -147,7 +144,7 @@ controller_manager_extra_volumes: {}
 kube_encrypt_secret_data: false
 kube_encrypt_token: "{{ lookup('password', credentials_dir + '/kube_encrypt_token.creds length=32 chars=ascii_letters,digits') }}"
 # Must be either: aescbc, secretbox or aesgcm
-kube_encryption_algorithm: "aescbc"
+kube_encryption_algorithm: "secretbox"
 # Which kubernetes resources to encrypt
 kube_encryption_resources: [secrets]
 

@@ -15,10 +15,10 @@ is_fedora_coreos: false
 disable_swap: true
 
 ## Change this to use another Kubernetes version, e.g. a current beta release
-kube_version: v1.22.5
+kube_version: v1.23.5
 
 ## The minimum version working
-kube_version_min_required: v1.20.0
+kube_version_min_required: v1.21.0
 
 ## Kube Proxy mode One of ['iptables','ipvs']
 kube_proxy_mode: ipvs
@@ -59,6 +59,8 @@ kube_proxy_nodeport_addresses: >-
 
 # Set to true to allow pre-checks to fail and continue deployment
 ignore_assert_errors: false
+
+kube_vip_enabled: false
 
 # nginx-proxy configure
 nginx_config_dir: "/etc/nginx"
@@ -105,7 +107,7 @@ nodelocaldns_secondary_skew_seconds: 5
 # Should be set to a cluster IP if using a custom cluster DNS
 manual_dns_server: ""
 
-# Can be docker_dns, host_resolvconf or none
+# Can be host_resolvconf, docker_dns or none
 resolvconf_mode: host_resolvconf
 # Deploy netchecker app to verify DNS resolve as an HTTP service
 deploy_netchecker: false
@@ -132,11 +134,15 @@ enable_coredns_k8s_endpoint_pod_names: false
 # Kubernetes configuration dirs and system namespace.
 # Those are where all the additional config stuff goes
 # the kubernetes normally puts in /srv/kubernetes.
-# This puts them in a same location and namespace.
+# This puts them in a sane location and namespace.
 # Editing those values will almost surely break something.
 kube_config_dir: /etc/kubernetes
 kube_script_dir: "{{ bin_dir }}/kubernetes-scripts"
 kube_manifest_dir: "{{ kube_config_dir }}/manifests"
+
+# Kubectl command
+# This is for consistency when using kubectl command in roles, and ensure
+kubectl: "{{ bin_dir }}/kubectl --kubeconfig {{ kube_config_dir }}/admin.conf"
 
 # This is where all the cert scripts and certs will be located
 kube_cert_dir: "{{ kube_config_dir }}/ssl"
@@ -150,6 +156,12 @@ kube_token_dir: "{{ kube_config_dir }}/tokens"
 # This is the group that the cert creation scripts chgrp the
 # cert files to. Not really changeable...
 kube_cert_group: kube-cert
+
+# Set to true when the CAs are managed externally.
+# When true, disables all tasks manipulating certificates. Ensure before the kubespray run that:
+# - Certificates and CAs are present in kube_cert_dir
+# - Kubeconfig files are present in kube_config_dir
+kube_external_ca_mode: false
 
 # Cluster Loglevel configuration
 kube_log_level: 2
@@ -254,10 +266,13 @@ kubelet_shutdown_grace_period: 60s
 kubelet_shutdown_grace_period_critical_pods: 20s
 
 # Whether to deploy the container engine
-deploy_container_engine: inventory_hostname in groups['k8s_cluster'] or etcd_deployment_type != 'host'
+deploy_container_engine: "{{ inventory_hostname in groups['k8s_cluster'] or etcd_deployment_type == 'docker' }}"
 
 # Container for runtime
 container_manager: containerd
+
+# Enable CRI Docker interface
+cri_dockerd_enabled: false
 
 # Enable Kata Containers as additional container runtime
 # When enabled, it requires `container_manager` different than Docker
@@ -271,6 +286,10 @@ gvisor_enabled: false
 # When enabled, it requires container_manager=crio
 crun_enabled: false
 
+# Enable youki as additional container runtime
+# When enabled, it requires container_manager=crio
+youki_enabled: false
+
 # Container on localhost (download images when download_localhost is true)
 container_manager_on_localhost: "{{ container_manager }}"
 
@@ -280,6 +299,8 @@ cri_socket: >-
   /var/run/crio/crio.sock
   {%- elif container_manager == 'containerd' -%}
   /var/run/containerd/containerd.sock
+  {%- elif cri_dockerd_enabled -%}
+  /var/run/cri-dockerd.sock
   {%- else -%}
   /var/run/dockershim.sock
   {%- endif -%}
@@ -336,15 +357,8 @@ docker_registry_mirrors: []
 ## Empty by default so no plugins will be installed.
 docker_plugins: []
 
-# Experimental kubeadm etcd deployment mode. Available only for new deployment
-etcd_kubeadm_enabled: false
-
 # Containerd options - thse are relevant when container_manager == 'containerd'
-containerd_version: 1.5.8
 containerd_use_systemd_cgroup: true
-
-# Docker options - this is relevant when container_manager == 'docker'
-docker_containerd_version: 1.4.12
 
 ## An obvious use case is allowing insecure-registry access to self hosted registries.
 ## Can be ipaddress and domain_name.
@@ -354,6 +368,12 @@ docker_containerd_version: 1.4.12
 #   - mirror.registry.io
 #   - 172.19.16.11:5000
 containerd_insecure_registries: []
+
+# Containerd conf default dir
+containerd_storage_dir: "/var/lib/containerd"
+containerd_state_dir: "/run/containerd"
+containerd_systemd_dir: "/etc/systemd/system/containerd.service.d"
+containerd_cfg_dir: "/etc/containerd"
 
 # Settings for containerized control plane (etcd/kubelet/secrets)
 # deployment type for legacy etcd mode
@@ -389,6 +409,7 @@ aws_ebs_csi_enabled: false
 azure_csi_enabled: false
 gcp_pd_csi_enabled: false
 vsphere_csi_enabled: false
+upcloud_csi_enabled: false
 csi_snapshot_controller_enabled: false
 persistent_volumes_enabled: false
 cephfs_provisioner_enabled: false
@@ -438,6 +459,21 @@ external_openstack_lbaas_use_octavia: false
 external_openstack_network_internal_networks: []
 external_openstack_network_public_networks: []
 
+# Default values for the external Hcloud Cloud Controller
+external_hcloud_cloud:
+  hcloud_api_token: ""
+  token_secret_name: hcloud
+
+  service_account_name: cloud-controller-manager
+
+  controller_image_tag: "latest"
+  ## A dictionary of extra arguments to add to the openstack cloud controller manager daemonset
+  ## Format:
+  ##  external_hcloud_cloud.controller_extra_args:
+  ##    arg1: "value1"
+  ##    arg2: "value2"
+  controller_extra_args: {}
+
 ## List of authorization modes that must be configured for
 ## the k8s cluster. Only 'AlwaysAllow', 'AlwaysDeny', 'Node' and
 ## 'RBAC' modes are tested. Order is important.
@@ -462,6 +498,11 @@ kubelet_protect_kernel_defaults: true
 ## List of key=value pairs that describe feature gates for
 ## the k8s cluster.
 kube_feature_gates: []
+kube_apiserver_feature_gates: []
+kube_controller_feature_gates: []
+kube_scheduler_feature_gates: []
+kube_proxy_feature_gates: []
+kubelet_feature_gates: []
 kubeadm_feature_gates: []
 
 # Local volume provisioner storage classes
@@ -500,7 +541,7 @@ is_kube_master: "{{ inventory_hostname in groups['kube_control_plane'] }}"
 kube_apiserver_count: "{{ groups['kube_control_plane'] | length }}"
 kube_apiserver_address: "{{ ip | default(fallback_ips[inventory_hostname]) }}"
 kube_apiserver_access_address: "{{ access_ip | default(kube_apiserver_address) }}"
-first_kube_control_plane: "{{ hostvars[groups['kube_control_plane'][0]]['access_ip'] | default(hostvars[groups['kube_control_plane'][0]]['ip'] | default(fallback_ips[groups['kube_control_plane'][0]])) }}"
+first_kube_control_plane_address: "{{ hostvars[groups['kube_control_plane'][0]]['access_ip'] | default(hostvars[groups['kube_control_plane'][0]]['ip'] | default(fallback_ips[groups['kube_control_plane'][0]])) }}"
 loadbalancer_apiserver_localhost: "{{ loadbalancer_apiserver is not defined }}"
 loadbalancer_apiserver_type: "nginx"
 # applied if only external loadbalancer_apiserver is defined, otherwise ignored
@@ -511,7 +552,7 @@ kube_apiserver_global_endpoint: |-
   {%- elif use_localhost_as_kubeapi_loadbalancer|default(False)|bool -%}
       https://127.0.0.1:{{ kube_apiserver_port }}
   {%- else -%}
-      https://{{ first_kube_control_plane }}:{{ kube_apiserver_port }}
+      https://{{ first_kube_control_plane_address }}:{{ kube_apiserver_port }}
   {%- endif %}
 kube_apiserver_endpoint: |-
   {% if loadbalancer_apiserver is defined -%}
@@ -521,7 +562,7 @@ kube_apiserver_endpoint: |-
   {%- elif is_kube_master -%}
       https://{{ kube_apiserver_bind_address | regex_replace('0\.0\.0\.0','127.0.0.1') }}:{{ kube_apiserver_port }}
   {%- else -%}
-      https://{{ first_kube_control_plane }}:{{ kube_apiserver_port }}
+      https://{{ first_kube_control_plane_address }}:{{ kube_apiserver_port }}
   {%- endif %}
 kube_apiserver_insecure_endpoint: >-
   http://{{ kube_apiserver_insecure_bind_address | regex_replace('0\.0\.0\.0','127.0.0.1') }}:{{ kube_apiserver_insecure_port }}
@@ -587,6 +628,8 @@ etcd_cert_dir: "{{ etcd_config_dir }}/ssl"
 
 typha_enabled: false
 
+calico_apiserver_enabled: false
+
 _host_architecture_groups:
   x86_64: amd64
   aarch64: arm64
@@ -632,3 +675,9 @@ proxy_disable_env:
   http_proxy: ''
   https_proxy: ''
   no_proxy: ''
+
+# krew root dir
+krew_root_dir: "/usr/local/krew"
+
+# sysctl_file_path to add sysctl conf to
+sysctl_file_path: "/etc/sysctl.d/99-sysctl.conf"
