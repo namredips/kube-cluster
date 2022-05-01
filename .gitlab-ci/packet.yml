@@ -31,18 +31,26 @@ packet_ubuntu20-calico-aio:
   variables:
     RESET_CHECK: "true"
 
-# Exericse ansible variants
+# Exericse ansible variants during the nightly jobs
 packet_ubuntu20-calico-aio-ansible-2_9:
   stage: deploy-part1
-  extends: .packet_pr
+  extends: .packet_periodic
   when: on_success
   variables:
     ANSIBLE_MAJOR_VERSION: "2.9"
     RESET_CHECK: "true"
 
+packet_ubuntu20-calico-aio-ansible-2_10:
+  stage: deploy-part1
+  extends: .packet_periodic
+  when: on_success
+  variables:
+    ANSIBLE_MAJOR_VERSION: "2.10"
+    RESET_CHECK: "true"
+
 packet_ubuntu20-calico-aio-ansible-2_11:
   stage: deploy-part1
-  extends: .packet_pr
+  extends: .packet_periodic
   when: on_success
   variables:
     ANSIBLE_MAJOR_VERSION: "2.11"
@@ -70,7 +78,7 @@ packet_centos7-flannel-addons-ha:
   stage: deploy-part2
   when: on_success
 
-packet_centos8-crio:
+packet_almalinux8-crio:
   extends: .packet_pr
   stage: deploy-part2
   when: on_success
@@ -96,16 +104,6 @@ packet_ubuntu16-canal-sep:
   when: manual
 
 packet_ubuntu16-flannel-ha:
-  stage: deploy-part2
-  extends: .packet_pr
-  when: manual
-
-packet_ubuntu16-kube-router-sep:
-  stage: deploy-part2
-  extends: .packet_pr
-  when: manual
-
-packet_ubuntu16-kube-router-svc-proxy:
   stage: deploy-part2
   extends: .packet_pr
   when: manual
@@ -145,27 +143,22 @@ packet_centos7-calico-ha-once-localhost:
   services:
     - docker:19.03.9-dind
 
-packet_centos8-kube-ovn:
+packet_almalinux8-kube-ovn:
   stage: deploy-part2
   extends: .packet_periodic
   when: on_success
 
-packet_centos8-calico:
+packet_almalinux8-calico:
   stage: deploy-part2
   extends: .packet_pr
   when: on_success
 
-packet_centos8-docker:
+packet_almalinux8-docker:
   stage: deploy-part2
   extends: .packet_pr
   when: on_success
 
 packet_fedora34-docker-weave:
-  stage: deploy-part2
-  extends: .packet_pr
-  when: on_success
-
-packet_fedora35-kube-router:
   stage: deploy-part2
   extends: .packet_pr
   when: on_success
@@ -203,7 +196,7 @@ packet_ubuntu18-flannel-ha-once:
   when: manual
 
 # Calico HA eBPF
-packet_centos8-calico-ha-ebpf:
+packet_almalinux8-calico-ha-ebpf:
   stage: deploy-part2
   extends: .packet_pr
   when: manual
@@ -214,11 +207,6 @@ packet_debian9-macvlan:
   when: manual
 
 packet_centos7-calico-ha:
-  stage: deploy-part2
-  extends: .packet_pr
-  when: manual
-
-packet_centos7-kube-router:
   stage: deploy-part2
   extends: .packet_pr
   when: manual
@@ -255,7 +243,7 @@ packet_amazon-linux-2-aio:
   extends: .packet_pr
   when: manual
 
-packet_centos8-calico-nodelocaldns-secondary:
+packet_almalinux8-calico-nodelocaldns-secondary:
   stage: deploy-part2
   extends: .packet_pr
   when: manual
@@ -269,6 +257,13 @@ packet_fedora34-kube-ovn:
 # Long jobs (45min+)
 
 packet_centos7-docker-weave-upgrade-ha:
+  stage: deploy-part3
+  extends: .packet_periodic
+  when: on_success
+  variables:
+    UPGRADE_TEST: basic
+
+packet_ubuntu20-calico-etcd-kubeadm-upgrade-ha:
   stage: deploy-part3
   extends: .packet_periodic
   when: on_success

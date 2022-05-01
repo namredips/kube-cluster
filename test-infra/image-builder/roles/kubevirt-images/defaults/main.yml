@@ -62,6 +62,13 @@ images:
     converted: true
     tag: "latest"
 
+  almalinux-8:
+    filename: AlmaLinux-8-GenericCloud-latest.x86_64.qcow2
+    url: https://repo.almalinux.org/almalinux/8.5/cloud/x86_64/images/AlmaLinux-8-GenericCloud-8.5-20211119.x86_64.qcow2
+    checksum: sha256:d629247b12802157be127db53a7fcb484b80fceae9896d750c953a51a8c6688f
+    converted: true
+    tag: "latest"
+
   debian-9:
     filename: debian-9-openstack-amd64.qcow2
     url: https://cdimage.debian.org/cdimage/openstack/current-9/debian-9-openstack-amd64.qcow2
@@ -91,8 +98,8 @@ images:
     tag: "latest"
 
   opensuse-leap-15:
-    filename: openSUSE-Leap-15.2-OpenStack.x86_64-0.0.4-Build8.25.qcow2
-    url: https://download.opensuse.org/repositories/Cloud:/Images:/Leap_15.2/images/openSUSE-Leap-15.2-OpenStack.x86_64-0.0.4-Build8.25.qcow2
-    checksum: sha256:4df9cee9281d1f57d20f79dc65d76e255592b904760e73c0dd44ac753a54330f
+    filename: openSUSE-Leap-15.3.x86_64-1.0.1-NoCloud-Build2.63.qcow2
+    url: https://download.opensuse.org/repositories/Cloud:/Images:/Leap_15.3/images/openSUSE-Leap-15.3.x86_64-1.0.1-NoCloud-Build2.63.qcow2
+    checksum: sha256:289248945e2d058551c71c1bdcb31a361cefe7136c7fd88a09b524eedfaf5215
     converted: true
     tag: "latest"

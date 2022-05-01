@@ -13,7 +13,7 @@ _To use the CRI-O container runtime set the following variables:_
 ```yaml
 download_container: false
 skip_downloads: false
-etcd_kubeadm_enabled: true
+etcd_deployment_type: host # optionally kubeadm
 ```
 
 ## k8s_cluster/k8s_cluster.yml
@@ -22,22 +22,17 @@ etcd_kubeadm_enabled: true
 container_manager: crio
 ```
 
-## etcd.yml
-
-```yaml
-etcd_deployment_type: host # optionally and mutually exclusive with etcd_kubeadm_enabled
-```
-
 ## all/crio.yml
 
 Enable docker hub registry mirrors
 
 ```yaml
-crio_registries_mirrors:
+crio_registries:
   - prefix: docker.io
     insecure: false
     blocked: false
     location: registry-1.docker.io
+    unqualified: false
     mirrors:
       - location: 192.168.100.100:5000
         insecure: true
