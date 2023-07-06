@@ -26,8 +26,12 @@ remove_dashboard () {
 }
 
 deploy_rook () {
-  kubectl create -f rook_crds.yaml -f rook_common.yaml -f rook_operator.yaml
+  kubectl create -f rook_crds.yaml
+  kubectl create -f rook_common.yaml
+  kubectl create -f rook_operator.yaml
+  sleep 30
   kubectl create -f rook_cluster.yaml
+  sleep 30
   kubectl create -f rook_dashboard.yaml
 }
 
