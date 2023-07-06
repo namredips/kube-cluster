@@ -13,7 +13,6 @@ rules:
       - configmaps
     verbs:
       - get
-{% if calico_version is version("v3.20.0", ">=") %}
   # EndpointSlices are used for Service-based network policy rule
   # enforcement.
   - apiGroups: ["discovery.k8s.io"]
@@ -22,7 +21,6 @@ rules:
     verbs:
       - watch
       - list
-{% endif %}
   - apiGroups: [""]
     resources:
       - endpoints
@@ -146,6 +144,7 @@ rules:
       - ipamconfigs
     verbs:
       - get
+      - create
   # Block affinities must also be watchable by confd for route aggregation.
   - apiGroups: ["crd.projectcalico.org"]
     resources:
@@ -160,3 +159,11 @@ rules:
     verbs:
       - get
 {% endif %}
+  # Used for creating service account tokens to be used by the CNI plugin
+  - apiGroups: [""]
+    resources:
+      - serviceaccounts/token
+    resourceNames:
+      - calico-node
+    verbs:
+      - create

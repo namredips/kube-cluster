@@ -1,9 +1,9 @@
-apiVersion: kubeadm.k8s.io/v1beta2
+apiVersion: kubeadm.k8s.io/v1beta3
 kind: InitConfiguration
 nodeRegistration:
   criSocket: {{ cri_socket }}
 ---
-apiVersion: kubeadm.k8s.io/v1beta2
+apiVersion: kubeadm.k8s.io/v1beta3
 kind: ClusterConfiguration
 imageRepository: {{ kube_image_repo }}
 kubernetesVersion: {{ kube_version }}
@@ -21,5 +21,5 @@ etcd:
 {% endif %}
 dns:
   type: CoreDNS
-  imageRepository: {{ coredns_image_repo | regex_replace('/coredns(?!/coredns).*$','') }}
+  imageRepository: {{ coredns_image_repo | regex_replace('/coredns(?!/coredns).*$', '') }}
   imageTag: {{ coredns_image_tag }}

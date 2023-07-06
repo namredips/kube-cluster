@@ -24,9 +24,10 @@ configured by the variable `loadbalancer_apiserver_localhost` (defaults to
 `True`. Or `False`, if there is an external `loadbalancer_apiserver` defined).
 You may also define the port the local internal loadbalancer uses by changing,
 `loadbalancer_apiserver_port`.  This defaults to the value of
-`kube_apiserver_port`. It is also important to note that Kubespray will only
+`kube_apiserver_port`.  It is also important to note that Kubespray will only
 configure kubelet and kube-proxy on non-master nodes to use the local internal
-loadbalancer.
+loadbalancer.  If you wish to control the name of the loadbalancer container,
+you can set the variable `loadbalancer_apiserver_pod_name`.
 
 If you choose to NOT use the local internal loadbalancer, you will need to
 use the [kube-vip](kube-vip.md) ansible role or configure your own loadbalancer to achieve HA. By default, it only configures a non-HA endpoint, which points to the
@@ -35,12 +36,6 @@ It can also configure clients to use endpoints for a given loadbalancer type.
 The following diagram shows how traffic to the apiserver is directed.
 
 ![Image](figures/loadbalancer_localhost.png?raw=true)
-
-  Note: Kubernetes master nodes still use insecure localhost access because
-  there are bugs in Kubernetes <1.5.0 in using TLS auth on master role
-  services. This makes backends receiving unencrypted traffic and may be a
-  security issue when interconnecting different nodes, or maybe not, if those
-  belong to the isolated management network without external access.
 
 A user may opt to use an external loadbalancer (LB) instead. An external LB
 provides access for external clients, while the internal LB accepts client
@@ -60,7 +55,7 @@ listen kubernetes-apiserver-https
   balance roundrobin
 ```
 
-  Note: That's an example config managed elsewhere outside of Kubespray.
+  Note: That's an example config managed elsewhere outside Kubespray.
 
 And the corresponding example global vars for such a "cluster-aware"
 external LB with the cluster API access modes configured in Kubespray:
@@ -91,7 +86,7 @@ for it.
 
   Note: TLS/SSL termination for externally accessed API endpoints' will **not**
   be covered by Kubespray for that case. Make sure your external LB provides it.
-  Alternatively you may specify an externally load balanced VIPs in the
+  Alternatively you may specify an external load balanced VIPs in the
   `supplementary_addresses_in_ssl_keys` list. Then, kubespray will add them into
   the generated cluster certificates as well.
 
@@ -128,11 +123,6 @@ Kubespray has nothing to do with it, this is informational only.
 
 As you can see, the masters' internal API endpoints are always
 contacted via the local bind IP, which is `https://bip:sp`.
-
-**Note** that for some cases, like healthchecks of applications deployed by
-Kubespray, the masters' APIs are accessed via the insecure endpoint, which
-consists of the local `kube_apiserver_insecure_bind_address` and
-`kube_apiserver_insecure_port`.
 
 ## Optional configurations
 

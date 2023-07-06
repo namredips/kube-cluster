@@ -43,7 +43,7 @@
   package:
     name: "{{ item }}"
     state: present
-  with_items: "{{ distro_extra_packages }} + [ 'rsyslog', 'openssh-server' ]"
+  with_items: "{{ distro_extra_packages + ['rsyslog', 'openssh-server'] }}"
 
 - name: Start needed services
   service:
@@ -67,7 +67,7 @@
     mode: 0640
 
 - name: Add my pubkey to "{{ distro_user }}" user authorized keys
-  authorized_key:
+  ansible.posix.authorized_key:
     user: "{{ distro_user }}"
     state: present
-    key: "{{ lookup('file', lookup('env','HOME') + '/.ssh/id_rsa.pub') }}"
+    key: "{{ lookup('file', lookup('env', 'HOME') + '/.ssh/id_rsa.pub') }}"

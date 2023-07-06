@@ -11,19 +11,27 @@
   set_fact:
     is_ostree: "{{ ostree.stat.exists }}"
 
+- name: set docker_version for openEuler
+  set_fact:
+    docker_version: '19.03'
+  when: ansible_distribution == "openEuler"
+  tags:
+    - facts
+
 - name: gather os specific variables
   include_vars: "{{ item }}"
   with_first_found:
     - files:
-        - "{{ ansible_distribution|lower }}-{{ ansible_distribution_version|lower|replace('/', '_') }}.yml"
-        - "{{ ansible_distribution|lower }}-{{ ansible_distribution_release|lower }}-{{ host_architecture }}.yml"
-        - "{{ ansible_distribution|lower }}-{{ ansible_distribution_release|lower }}.yml"
-        - "{{ ansible_distribution|lower }}-{{ ansible_distribution_major_version|lower|replace('/', '_') }}.yml"
-        - "{{ ansible_distribution|lower }}-{{ host_architecture }}.yml"
-        - "{{ ansible_distribution|lower }}.yml"
-        - "{{ ansible_os_family|lower }}-{{ ansible_distribution_major_version|lower|replace('/', '_') }}.yml"
-        - "{{ ansible_os_family|lower }}-{{ host_architecture }}.yml"
-        - "{{ ansible_os_family|lower }}.yml"
+        - "{{ ansible_distribution | lower }}-{{ ansible_distribution_version | lower | replace('/', '_') }}.yml"
+        - "{{ ansible_distribution | lower }}-{{ ansible_distribution_release | lower }}-{{ host_architecture }}.yml"
+        - "{{ ansible_distribution | lower }}-{{ ansible_distribution_release | lower }}.yml"
+        - "{{ ansible_distribution | lower }}-{{ ansible_distribution_major_version | lower | replace('/', '_') }}.yml"
+        - "{{ ansible_distribution | lower }}-{{ host_architecture }}.yml"
+        - "{{ ansible_distribution | lower }}.yml"
+        - "{{ ansible_distribution.split(' ')[0] | lower }}.yml"
+        - "{{ ansible_os_family | lower }}-{{ ansible_distribution_major_version | lower | replace('/', '_') }}.yml"
+        - "{{ ansible_os_family | lower }}-{{ host_architecture }}.yml"
+        - "{{ ansible_os_family | lower }}.yml"
         - defaults.yml
       paths:
         - ../vars
@@ -70,7 +78,7 @@
     mode: 0644
   when: ansible_distribution == "Fedora" and not is_ostree
 
-- name: Configure docker repository on RedHat/CentOS/Oracle/AlmaLinux Linux
+- name: Configure docker repository on RedHat/CentOS/OracleLinux/AlmaLinux/KylinLinux
   template:
     src: "rh_docker.repo.j2"
     dest: "{{ yum_repo_dir }}/docker-ce.repo"
@@ -100,6 +108,7 @@
       update_cache: true
     dnf:
       enablerepo: "{{ docker_package_info.enablerepo | default(omit) }}"
+      disablerepo: "{{ docker_package_info.disablerepo | default(omit) }}"
     yum:
       enablerepo: "{{ docker_package_info.enablerepo | default(omit) }}"
     zypper:
@@ -112,7 +121,7 @@
   when:
     - not ansible_os_family in ["Flatcar", "Flatcar Container Linux by Kinvolk"]
     - not is_ostree
-    - docker_package_info.pkgs|length > 0
+    - docker_package_info.pkgs | length > 0
 
 # This is required to ensure any apt upgrade will not break kubernetes
 - name: Tell Debian hosts not to change the docker version with apt upgrade
@@ -134,7 +143,7 @@
         state: started
       when: docker_task_result is not changed
   rescue:
-    - debug:  # noqa unnamed-task
+    - debug:  # noqa name[missing]
         msg: "Docker start failed. Try to remove our config"
     - name: remove kubespray generated config
       file:

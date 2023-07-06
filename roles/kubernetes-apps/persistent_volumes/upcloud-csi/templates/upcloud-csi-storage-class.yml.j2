@@ -7,5 +7,10 @@ metadata:
   annotations:
     storageclass.kubernetes.io/is-default-class: "{{ class.is_default | default(false) | ternary("true","false") }}"
 provisioner: storage.csi.upcloud.com
-allowVolumeExpansion: {{ expand_persistent_volumes }}
+reclaimPolicy: Delete
+parameters:
+{% for key, value in (class.parameters | default({})).items() %}
+  "{{ key }}": "{{ value }}"
+{% endfor %}
+allowVolumeExpansion: {{ class.expand_persistent_volumes | default(true) | ternary("true","false") }}
 {% endfor %}

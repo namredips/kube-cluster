@@ -18,7 +18,7 @@
       when:
         - not download_always_pull
 
-    - debug:  # noqa unnamed-task
+    - debug:  # noqa name[missing]
         msg: "Pull {{ image_reponame }} required is: {{ pull_required }}"
 
     - name: download_container | Determine if image is in cache
@@ -60,7 +60,7 @@
       register: pull_task_result
       until: pull_task_result is succeeded
       delay: "{{ retry_stagger | random + 3 }}"
-      retries: 4
+      retries: "{{ download_retries }}"
       become: "{{ user_can_become_root | default(false) or not download_localhost }}"
       environment: "{{ proxy_env if container_manager == 'containerd' else omit }}"
       when:
@@ -68,7 +68,7 @@
         - not image_is_cached
 
     - name: download_container | Save and compress image
-      shell: "{{ image_save_command_on_localhost if download_localhost else image_save_command }}"  # noqa 305 image_save_command_on_localhost contains a pipe, therefore requires shell
+      shell: "{{ image_save_command_on_localhost if download_localhost else image_save_command }}"  # noqa command-instead-of-shell - image_save_command_on_localhost contains a pipe, therefore requires shell
       delegate_to: "{{ download_delegate }}"
       delegate_facts: no
       register: container_save_status
@@ -80,10 +80,10 @@
         - download_run_once
 
     - name: download_container | Copy image to ansible host cache
-      synchronize:
+      ansible.posix.synchronize:
         src: "{{ image_path_final }}"
         dest: "{{ image_path_cached }}"
-        use_ssh_args: "{{ has_bastion | default(false) }}"
+        use_ssh_args: true
         mode: pull
       when:
         - not image_is_cached
@@ -92,23 +92,23 @@
         - download_delegate == inventory_hostname
 
     - name: download_container | Upload image to node if it is cached
-      synchronize:
+      ansible.posix.synchronize:
         src: "{{ image_path_cached }}"
         dest: "{{ image_path_final }}"
-        use_ssh_args: "{{ has_bastion | default(false) }}"
+        use_ssh_args: true
         mode: push
       delegate_facts: no
       register: upload_image
       failed_when: not upload_image
       until: upload_image is succeeded
-      retries: 4
+      retries: "{{ download_retries }}"
       delay: "{{ retry_stagger | random + 3 }}"
       when:
         - pull_required
         - download_force_cache
 
     - name: download_container | Load image into the local container registry
-      shell: "{{ image_load_command }}"  # noqa 305 image_load_command uses pipes, therefore requires shell
+      shell: "{{ image_load_command }}"  # noqa command-instead-of-shell - image_load_command uses pipes, therefore requires shell
       register: container_load_status
       failed_when: container_load_status is failed
       when:

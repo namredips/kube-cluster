@@ -3,18 +3,18 @@
 - import_tasks: 0010-swapoff.yml
   when:
     - not dns_late
-    - disable_swap
+    - kubelet_fail_swap_on
 
-- import_tasks: 0020-verify-settings.yml
+- import_tasks: 0020-set_facts.yml
+  tags:
+    - resolvconf
+    - facts
+
+- import_tasks: 0040-verify-settings.yml
   when:
     - not dns_late
   tags:
     - asserts
-
-- import_tasks: 0040-set_facts.yml
-  tags:
-    - resolvconf
-    - facts
 
 - import_tasks: 0050-create_directories.yml
   when:
@@ -66,9 +66,14 @@
   tags:
     - bootstrap-os
 
-- import_tasks: 0090-etchosts.yml
+- import_tasks: 0081-ntp-configurations.yml
   when:
     - not dns_late
+    - ntp_enabled
+  tags:
+    - bootstrap-os
+
+- import_tasks: 0090-etchosts.yml
   tags:
     - bootstrap-os
     - etchosts
@@ -115,6 +120,7 @@
     - not dns_late
     - azure_check.stat.exists
     - ansible_os_family == "RedHat"
+    - growpart_azure_enabled
   tags:
     - bootstrap-os
 

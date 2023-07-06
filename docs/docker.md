@@ -8,13 +8,7 @@ Using the docker container manager:
 container_manager: docker
 ```
 
-Using `cri-dockerd` instead of `dockershim`:
-
-```yaml
-cri_dockerd_enabled: false
-```
-
-*Note:* The `cri_dockerd_enabled: true` setting will become the default in a future kubespray release once kubespray 1.24+ is supported and `dockershim` is removed. At that point, changing this option will be deprecated and silently ignored.
+*Note:* `cri-dockerd` has replaced `dockershim` across supported kubernetes version in kubespray 2.20.
 
 Enabling the `overlay2` graph driver:
 
@@ -61,7 +55,7 @@ Docker log options:
 docker_log_opts: "--log-opt max-size=50m --log-opt max-file=5"
 ```
 
-Changre the docker `bin_dir`, this should not be changed unless you use a custom docker package:
+Change the docker `bin_dir`, this should not be changed unless you use a custom docker package:
 
 ```yaml
 docker_bin_dir: "/usr/bin"
